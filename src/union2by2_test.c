@@ -76,10 +76,78 @@ int neon_merge_test(void) {
   return 0;
 }
 
+int store_unique_test(void) {
+  typedef struct test_case_s {
+    char *name;
+    uint16_t last_store[8];
+    uint16_t vec_min[8];
+    uint16_t expected[8];
+  } test_case_t;
+
+  test_case_t tests[] = {
+      {
+          .name = "cold_start_no_copies",
+          .last_store = {-1, -1, -1, -1, -1, -1, -1, -1},
+          .vec_min = {0, 1, 2, 3, 4, 5, 6, 7},
+          .expected = {0, 1, 2, 3, 4, 5, 6, 7},
+      },
+      {
+          .name = "cold_start_some_copies",
+          .last_store = {-1, -1, -1, -1, -1, -1, -1, -1},
+          .vec_min = {0, 0, 1, 1, 2, 2, 3, 3},
+          .expected = {0, 1, 2, 3, 0, 0, 0, 0},
+      },
+      {
+          .name = "warm_start_no_copies",
+          .last_store = {0, 1, 2, 3, 4, 5, 6, 7},
+          .vec_min = {8, 9, 10, 11, 12, 13, 14, 15},
+          .expected = {8, 9, 10, 11, 12, 13, 14, 15},
+      },
+      {
+          .name = "warm_start_some_copies",
+          .last_store = {0, 0, 1, 1, 2, 2, 3, 3},
+          .vec_min = {3, 3, 4, 4, 5, 5, 6, 6},
+          .expected = {4, 5, 6, 0, 0, 0, 0, 0},
+      },
+      {
+          .name = "warm_start_all_copies",
+          .last_store = {0, 0, 1, 1, 2, 2, 3, 3},
+          .vec_min = {4, 4, 5, 5, 6, 6, 7, 7},
+          .expected = {4, 5, 6, 7, 0, 0, 0, 0},
+      },
+  };
+
+  printf("testing %s:\n", __FUNCTION__);
+  int N = sizeof(tests) / sizeof(test_case_t);
+  for (int i = 0; i < N; i++) {
+    test_case_t t = tests[i];
+    printf("%s/%s: ", __FUNCTION__, t.name);
+
+    uint16x8_t last_store, vec_min;
+    uint16_t result[8];
+    memset(result, -1, 8);
+
+    last_store = vld1q_u16(t.last_store);
+    vec_min = vld1q_u16(t.vec_min);
+    store_unique(last_store, vec_min, result);
+
+    for (size_t i = 0; i < 8; i++) {
+      if (t.expected[i] != result[i]) {
+        printf("[FAIL]\n\n");
+        return 1;
+      }
+    }
+    printf("[PASS]\n");
+  }
+  printf("\n");
+  return 0;
+}
+
 int main(void) {
   int pass = 0;
 
   pass |= neon_merge_test();
+  pass |= store_unique_test();
 
   return pass;
 }

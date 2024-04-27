@@ -47,6 +47,70 @@ def test_neon_merge():
         print("\t[PASS].")
     print()
 
+def test_store_unique():
+    print("test_store_unique:")
+    tests = [
+        {
+            'name': 'no_duplicates',
+            'last': [-1, -1, -1, -1, -1, -1, -1, -1],
+            'curr': [0, 1, 2, 3, 4, 5, 6, 7],
+            'expected': [0, 1, 2, 3, 4, 5, 6, 7],
+            'expected_n': 8,
+        },
+        {
+            'name': 'one_duplicate_without_carry',
+            'last': [-1, -1, -1, -1, -1, -1, -1, -1],
+            'curr': [0, 0, 1, 2, 3, 4, 5, 6],
+            'expected': [0, 1, 2, 3, 4, 5, 6],
+            'expected_n': 7,
+        },
+        {
+            'name': 'one_duplicate_with_carry',
+            'last': [-1, -1, -1, -1, -1, -1, -1, 0],
+            'curr': [0, 1, 2, 3, 4, 5, 6, 7],
+            'expected': [1, 2, 3, 4, 5, 6, 7],
+            'expected_n': 7,
+        },
+        {
+            'name': 'some_duplicates_without_carry',
+            'last': [-1, -1, -1, -1, -1, -1, -1, -1],
+            'curr': [0, 1, 2, 2, 3, 3, 4, 5],
+            'expected': [0, 1, 2, 3, 4, 5],
+            'expected_n': 6,
+        },
+        {
+            'name': 'some_duplicates_with_carry',
+            'last': [-1, -1, -1, -1, -1, -1, -1, 0],
+            'curr': [0, 1, 2, 2, 3, 3, 4, 5],
+            'expected': [1, 2, 3, 4, 5],
+            'expected_n': 5,
+        },
+        {
+            'name': 'max_duplicates',
+            'last': [-1, -1, -1, -1, -1, -1, -1, 0],
+            'curr': [0, 1, 1, 2, 2, 3, 3, 4],
+            'expected': [1, 2, 3, 4],
+            'expected_n': 4,
+        },
+    ]
+
+    for test in tests:
+        print(f"testing {test['name']}:", end="")
+        out = []
+        num_elems = union_simd.store_unique(out, test['curr'], test['last'])
+
+        if out != test['expected']:
+            print(f"\t[FAIL].\n\texpected: {test['expected']}\n\tgot: {out}")
+            sys.exit(1)
+
+        if num_elems != test['expected_n']:
+            print(f"\t[FAIL].\n\texpected: {test['expected_n']} elems\n\tgot: {num_elems} elems")
+            sys.exit(1)
+
+        print("\t[PASS].")
+    print()
+
     
 if __name__ == "__main__":
     test_neon_merge()
+    test_store_unique()
