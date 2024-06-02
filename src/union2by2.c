@@ -1,58 +1,6 @@
 #include <arm_neon.h>
-
-/* Example:
- *  a = { 0, 2, 4, 6 }
- *  b = { 1, 3, 5, 7 }
- *
- *  tmp = { 0, 2, 4, 6 }
- *  max = { 1, 3, 5, 7 }
- *
- *  tmp = { 2, 4, 6, 0 }
- *
- *  min = { 1, 3, 5, 0 }
- *  max = { 2, 4, 6, 7 }
- *
- *  tmp = { 3, 5, 0, 1 }
- *
- *  min = { 2, 4, 0, 1 }
- *  max = { 3, 5, 6, 7 }
- *
- *  tmp = { 4, 0, 1, 2 }
- *
- *  min = { 3, 0, 1, 2 }
- *  max = { 4, 5, 6, 7 }
- *
- *  min = { 0, 1, 2, 3 }
- *
- */
-static inline void neon_merge(const uint16x8_t vInput1, const uint16x8_t vInput2,
-                             uint16x8_t *vecMin, uint16x8_t *vecMax) {
-  uint16x8_t vecTmp;
-  vecTmp = vminq_u16(vInput1, vInput2);
-  *vecMax = vmaxq_u16(vInput1, vInput2);
-  vecTmp = vextq_u8(vecTmp, vecTmp, 2);
-  *vecMin = vminq_u16(vecTmp, *vecMax);
-  *vecMax = vmaxq_u16(vecTmp, *vecMax);
-  vecTmp = vextq_u8(*vecMin, *vecMin, 2);
-  *vecMin = vminq_u16(vecTmp, *vecMax);
-  *vecMax = vmaxq_u16(vecTmp, *vecMax);
-  vecTmp = vextq_u8(*vecMin, *vecMin, 2);
-  *vecMin = vminq_u16(vecTmp, *vecMax);
-  *vecMax = vmaxq_u16(vecTmp, *vecMax);
-  vecTmp = vextq_u8(*vecMin, *vecMin, 2);
-  *vecMin = vminq_u16(vecTmp, *vecMax);
-  *vecMax = vmaxq_u16(vecTmp, *vecMax);
-  vecTmp = vextq_u8(*vecMin, *vecMin, 2);
-  *vecMin = vminq_u16(vecTmp, *vecMax);
-  *vecMax = vmaxq_u16(vecTmp, *vecMax);
-  vecTmp = vextq_u8(*vecMin, *vecMin, 2);
-  *vecMin = vminq_u16(vecTmp, *vecMax);
-  *vecMax = vmaxq_u16(vecTmp, *vecMax);
-  vecTmp = vextq_u8(*vecMin, *vecMin, 2);
-  *vecMin = vminq_u16(vecTmp, *vecMax);
-  *vecMax = vmaxq_u16(vecTmp, *vecMax);
-  *vecMin = vextq_u8(*vecMin, *vecMin, 2);
-}
+#include <stdlib.h>
+#include <string.h>
 
 static uint8_t uniqshuf[] = {
     0x0,  0x1,  0x2,  0x3,  0x4,  0x5,  0x6,  0x7,  0x8,  0x9,  0xa,  0xb,
@@ -398,53 +346,110 @@ static uint8_t uniqshuf[] = {
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, 0xFF, 0xFF};
 
-static uint8x8_t vmovmaskq_u8(uint8x8_t input)
-{
-    // Example input (half scale):
-    // 0x89 FF 1D C0 00 10 99 33
+int compare_uints(const uint16_t *a, const uint16_t *b) {
+  return (*(uint16_t *)a - *(uint16_t *)b);
+}
 
-    // Shift out everything but the sign bits
-    // 0x01 01 00 01 00 00 01 00
-    uint16x4_t high_bits = vreinterpret_u16_u8(vshr_n_u8(input, 7));
+/* Example:
+ *  a = { 0, 2, 4, 6 }
+ *  b = { 1, 3, 5, 7 }
+ *
+ *  tmp = { 0, 2, 4, 6 }
+ *  max = { 1, 3, 5, 7 }
+ *
+ *  tmp = { 2, 4, 6, 0 }
+ *
+ *  min = { 1, 3, 5, 0 }
+ *  max = { 2, 4, 6, 7 }
+ *
+ *  tmp = { 3, 5, 0, 1 }
+ *
+ *  min = { 2, 4, 0, 1 }
+ *  max = { 3, 5, 6, 7 }
+ *
+ *  tmp = { 4, 0, 1, 2 }
+ *
+ *  min = { 3, 0, 1, 2 }
+ *  max = { 4, 5, 6, 7 }
+ *
+ *  min = { 0, 1, 2, 3 }
+ *
+ */
+static inline void neon_merge(const uint16x8_t v_input1,
+                              const uint16x8_t v_input2, uint16x8_t *vec_min,
+                              uint16x8_t *vec_max) {
+  uint16x8_t vec_tmp;
+  vec_tmp = vminq_u16(v_input1, v_input2);
+  *vec_max = vmaxq_u16(v_input1, v_input2);
+  vec_tmp = vextq_u8(vec_tmp, vec_tmp, 2);
+  *vec_min = vminq_u16(vec_tmp, *vec_max);
+  *vec_max = vmaxq_u16(vec_tmp, *vec_max);
+  vec_tmp = vextq_u8(*vec_min, *vec_min, 2);
+  *vec_min = vminq_u16(vec_tmp, *vec_max);
+  *vec_max = vmaxq_u16(vec_tmp, *vec_max);
+  vec_tmp = vextq_u8(*vec_min, *vec_min, 2);
+  *vec_min = vminq_u16(vec_tmp, *vec_max);
+  *vec_max = vmaxq_u16(vec_tmp, *vec_max);
+  vec_tmp = vextq_u8(*vec_min, *vec_min, 2);
+  *vec_min = vminq_u16(vec_tmp, *vec_max);
+  *vec_max = vmaxq_u16(vec_tmp, *vec_max);
+  vec_tmp = vextq_u8(*vec_min, *vec_min, 2);
+  *vec_min = vminq_u16(vec_tmp, *vec_max);
+  *vec_max = vmaxq_u16(vec_tmp, *vec_max);
+  vec_tmp = vextq_u8(*vec_min, *vec_min, 2);
+  *vec_min = vminq_u16(vec_tmp, *vec_max);
+  *vec_max = vmaxq_u16(vec_tmp, *vec_max);
+  vec_tmp = vextq_u8(*vec_min, *vec_min, 2);
+  *vec_min = vminq_u16(vec_tmp, *vec_max);
+  *vec_max = vmaxq_u16(vec_tmp, *vec_max);
+  *vec_min = vextq_u8(*vec_min, *vec_min, 2);
+}
 
-    // Merge the even lanes together with vsra. The '??' bytes are garbage.
-    // vsri could also be used, but it is slightly slower on aarch64.
-    // 0x??03 ??02 ??00 ??01
-    uint32x2_t paired16 = vreinterpret_u32_u16(
-                              vsra_n_u16(high_bits, high_bits, 7));
-    // Repeat with wider lanes.
-    // 0x??????0B ??????04
-    uint64x1_t paired32 = vreinterpret_u64_u32(
-                              vsra_n_u32(paired16, paired16, 14));
-    // 0x??????????????4B
-    uint8x8_t paired64 = vreinterpret_u8_u64(
-                              vsra_n_u64(paired32, paired32, 28));
-    // Extract the low 8 bits from each lane and join.
-    // 0x4B
-    return paired64;
+static uint8x8_t vmovmaskq_u8(uint8x8_t input) {
+  // Example input (half scale):
+  // 0x89 FF 1D C0 00 10 99 33
+
+  // Shift out everything but the sign bits
+  // 0x01 01 00 01 00 00 01 00
+  uint16x4_t high_bits = vreinterpret_u16_u8(vshr_n_u8(input, 7));
+
+  // Merge the even lanes together with vsra. The '??' bytes are garbage.
+  // vsri could also be used, but it is slightly slower on aarch64.
+  // 0x??03 ??02 ??00 ??01
+  uint32x2_t paired16 =
+      vreinterpret_u32_u16(vsra_n_u16(high_bits, high_bits, 7));
+  // Repeat with wider lanes.
+  // 0x??????0B ??????04
+  uint64x1_t paired32 =
+      vreinterpret_u64_u32(vsra_n_u32(paired16, paired16, 14));
+  // 0x??????????????4B
+  uint8x8_t paired64 = vreinterpret_u8_u64(vsra_n_u64(paired32, paired32, 28));
+  // Extract the low 8 bits from each lane and join.
+  // 0x4B
+  return paired64;
 }
 
 /* Example:
  *  old = { 0, 1, 1, 2 }
  *  new = { 2, 3, 3, 4 }
- *  
+ *
  *  vecTmp = { 2, 2, 3, 3 }
  *  M = new & vecTmp = { 1, 0, 1, 0 } = 0b1010
- *  arr = uniqshuf + M = { 0x1, 0x3, 0xFF, 0xFF } (choose index i iff M[i] == 0, ensuring uniqueness)
- *  output += [arr[i] if i != 0xFF]
-*/
+ *  arr = uniqshuf + M = { 0x1, 0x3, 0xFF, 0xFF } (choose index i iff M[i] == 0,
+ *  ensuring uniqueness) output += [arr[i] if i != 0xFF]
+ */
 static inline int store_unique(uint16x8_t old, uint16x8_t newval,
                                uint16_t *output) {
   // rotate the concat of newval and old by 1
-  uint8x16_t vecTmp = vreinterpretq_u8_u16(vextq_u16(old, newval, 7));
+  uint8x16_t vec_tmp = vreinterpretq_u8_u16(vextq_u16(old, newval, 7));
 
   // we want an 8-bitmask where the ith bit denotes if the ith lane of
   // 16x8 register is 1 (representing whether or not we have a match)
-  uint8x8_t cmp = vqmovn_u16(vceqq_u16(vecTmp, newval));
+  uint8x8_t cmp = vqmovn_u16(vceqq_u16(vec_tmp, newval));
   uint8x8_t tM = vmovmaskq_u8(cmp);
 
   uint8_t M = vget_lane_u8(tM, 0);
-  int number_of_new_values = vget_lane_u8(vcnt_u8(tM), 0);
+  int number_of_new_values = 8 - vget_lane_u8(vcnt_u8(tM), 0);
 
   uint8x16_t key = vld1q_u8((const uint8x16_t *)uniqshuf + M);
   uint8x16_t val = vqtbl1q_u8(vreinterpretq_u8_u16(newval), key);
@@ -452,3 +457,134 @@ static inline int store_unique(uint16x8_t old, uint16x8_t newval,
   return number_of_new_values;
 }
 
+int unique(uint16_t *dst, size_t len) {
+  size_t pos = 1;
+  for (size_t i = 1; i < len; i++) {
+    if (dst[i - 1] == dst[i]) {
+      continue;
+    }
+    dst[pos++] = dst[i];
+  }
+  return pos;
+}
+
+int union2by2_scalar(uint16_t *dst, uint16_t *src1, size_t len1, uint16_t *src2,
+                     size_t len2) {
+  uint16_t *original_dst = dst;
+
+  size_t pos1 = 0;
+  size_t pos2 = 0;
+
+  uint16_t s1, s2;
+  while (pos1 < len1 && pos2 < len2) {
+    s1 = src1[pos1];
+    s2 = src2[pos2];
+
+    *(dst++) = s1 <= s2 ? s1 : s2;
+    pos1 += s1 <= s2;
+    pos2 += s2 <= s1;
+  }
+
+  // flush rest remaining set
+  if (pos1 == len1) {
+    src1 = src2;
+    pos1 = pos2;
+    len1 = len2;
+  }
+
+  while (pos1 < len1) {
+    *(dst++) = src1[pos1++];
+  }
+
+  return dst - original_dst;
+}
+
+int union2by2_vectorized(uint16_t *dst, uint16_t *src1, size_t len1,
+                         uint16_t *src2, size_t len2) {
+  if ((len1 < 8) || (len2 < 8)) {
+    return union2by2_scalar(dst, src1, len1, src2, len2);
+  }
+
+  uint16x8_t vA, vB, v_min, v_max, last_store;
+  size_t n_vecs1, n_vecs2;
+  size_t pos1, pos2;
+  uint16_t *original_dst = dst;
+
+  n_vecs1 = len1 / 8;
+  n_vecs2 = len2 / 8;
+
+  pos1 = 0;
+  pos2 = 0;
+
+  vA = vld1q_u16((uint16x8_t *)src1 + pos1);
+  pos1++;
+
+  vB = vld1q_u16((uint16x8_t *)src2 + pos2);
+  pos2++;
+
+  neon_merge(vA, vB, &v_min, &v_max);
+  last_store = vmovq_n_u16(-1);
+
+  dst += store_unique(last_store, v_min, dst);
+  last_store = v_min;
+
+  uint16x8_t V;
+  uint16_t curr_a, curr_b, *src;
+  size_t pos;
+  int cmp;
+  while ((pos1 < n_vecs1) && (pos2 < n_vecs2)) {
+    curr_a = src1[pos1 * 8];
+    curr_b = src2[pos2 * 8];
+
+    // prefer cmov to branch prediction
+    // apparently the general rule of thumb is to use cmovs if the
+    // predictability is under 75%, which should be the case here (we
+    // expect branch predictability to be ~50%)
+    cmp = curr_a <= curr_b;
+    src = cmp ? src1 : src2;
+    pos = cmp ? pos1 : pos2;
+
+    V = vld1q_u16((uint16x8_t *)src + pos);
+
+    pos1 += cmp;
+    pos2 += !cmp;
+
+    neon_merge(V, v_max, &v_min, &v_max);
+    dst += store_unique(last_store, v_min, dst);
+    last_store = v_min;
+  }
+
+  // we exhausted the smaller of the two sets of 8-tuples, so we must
+  // manually finish off the algorithm. we have vec_max elements left
+  // from the algorithm and up to 7 other elements from the exhausted
+  // set. we toss those elements into a buffer, sort the buffer, and
+  // then store the uniques onto the destination. then, we run a scalar
+  // union2by2 on the remaining set.
+  uint16_t buffer[16];
+  int buffer_size = store_unique(last_store, v_max, buffer);
+
+  uint16_t *smaller, *bigger;
+  size_t smaller_size, bigger_size;
+
+  if (pos1 == n_vecs1) {
+    smaller = src1 + 8 * pos1;
+    bigger = src2 + 8 * pos2;
+
+    smaller_size = len1 - (pos1 * 8);
+    bigger_size = len2 - (pos2 * 8);
+  } else {
+    smaller = src2 + 8 * pos2;
+    bigger = src1 + 8 * pos1;
+
+    smaller_size = len2 - (pos2 * 8);
+    bigger_size = len1 - (pos1 * 8);
+  }
+
+  memcpy(buffer + buffer_size, smaller, smaller_size * sizeof(uint16_t));
+  buffer_size += smaller_size;
+  qsort(buffer, buffer_size, sizeof(uint16_t), compare_uints);
+  buffer_size = unique(buffer, buffer_size);
+
+  dst += union2by2_scalar(dst, buffer, buffer_size, bigger, bigger_size);
+  return dst - original_dst;
+}
