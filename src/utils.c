@@ -94,3 +94,63 @@ int compare_uints(const void *a, const void *b)
 {
 	return (*(uint16_t *)a - *(uint16_t *)b);
 }
+
+uint16_t generate_random_size(uint16_t max_size) {
+	FILE *dev_rand = fopen("/dev/urandom", "r");
+	if (dev_rand == NULL) {
+		return 1;
+	}
+
+	uint16_t rand;
+	fread(&rand, sizeof(uint16_t), 1, dev_rand);
+	rand %= max_size;
+
+	int rc;
+	if ((rc = fclose(dev_rand))) {
+		return 0;
+	}
+
+	return rand;
+}
+
+int generate_sets(uint16_t *set1, uint16_t *n1, uint16_t *set2, uint16_t *n2,
+		  uint16_t max_val)
+{
+	uint16_t buff;
+	int rc;
+
+	FILE *dev_rand = fopen("/dev/urandom", "r");
+	if (dev_rand == NULL) {
+		return 1;
+	}
+
+	for (uint16_t i = 0; i < *n1; i++) {
+		rc = fread(&buff, sizeof(uint16_t), 1, dev_rand);
+		if (!rc) {
+			return 1;
+		}
+
+		set1[i] = buff % max_val;
+	}
+
+	for (uint16_t i = 0; i < *n2; i++) {
+		rc = fread(&buff, sizeof(uint16_t), 1, dev_rand);
+		if (!rc) {
+			return 1;
+		}
+
+		set2[i] = buff % max_val;
+	}
+
+	qsort(set1, *n1, sizeof(uint16_t), compare_uints);
+	*n1 = unique(set1, *n1);
+
+	qsort(set2, *n2, sizeof(uint16_t), compare_uints);
+	*n2 = unique(set2, *n2);
+
+	if ((rc = fclose(dev_rand))) {
+		return rc;
+	}
+	
+	return 0;
+}

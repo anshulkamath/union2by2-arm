@@ -27,5 +27,8 @@ $(obj_dir)/utils.o: src/utils.c include/utils.h | obj
 $(obj_dir)/union2by2.o: src/union2by2.c include/union2by2.h | obj
 	$(CC) -c $(C_FLAGS) -o $@ $<
 
+benchmark: src/union2by2_benchmark.c obj/union2by2.o obj/utils.o | bin
+	$(CC) $(C_FLAGS) -o $(build_dir)/benchmark-u2b2 $^
+
 clean:
 	rm -rf $(build_dir)
