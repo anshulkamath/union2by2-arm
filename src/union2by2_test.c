@@ -64,7 +64,7 @@ int neon_merge_test(void)
 		ve_min = vld1q_u16(t.e_min);
 		ve_max = vld1q_u16(t.e_max);
 
-		neon_merge(v1, v2, &v_min, &v_max);
+		merge(v1, v2, &v_min, &v_max);
 		if (!assert_equivalent(ve_min, v_min) ||
 		    !assert_equivalent(ve_max, v_max)) {
 			printf("[FAIL]\n\n");
@@ -306,7 +306,6 @@ int union2by2_test(void)
 			}
 			printf("\n");
 		}
-		printf("\n");
 	}
 
 	return rc;
