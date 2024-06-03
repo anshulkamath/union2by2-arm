@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "utils.h"
+
 static uint8_t uniqshuf[] = {
 	0x0,  0x1,  0x2,  0x3,	0x4,  0x5,  0x6,  0x7,	0x8,  0x9,  0xa,  0xb,
 	0xc,  0xd,  0xe,  0xf,	0x2,  0x3,  0x4,  0x5,	0x6,  0x7,  0x8,  0x9,
@@ -347,11 +349,6 @@ static uint8_t uniqshuf[] = {
 	0xFF, 0xFF, 0xFF, 0xFF
 };
 
-int compare_uints(const uint16_t *a, const uint16_t *b)
-{
-	return (*(uint16_t *)a - *(uint16_t *)b);
-}
-
 /* Example:
  *  a = { 0, 2, 4, 6 }
  *  b = { 1, 3, 5, 7 }
@@ -463,25 +460,13 @@ static inline int store_unique(uint16x8_t old, uint16x8_t newval,
 	return number_of_new_values;
 }
 
-int unique(uint16_t *dst, size_t len)
-{
-	size_t pos = 1;
-	for (size_t i = 1; i < len; i++) {
-		if (dst[i - 1] == dst[i]) {
-			continue;
-		}
-		dst[pos++] = dst[i];
-	}
-	return pos;
-}
-
-int union2by2_scalar(uint16_t *dst, uint16_t *src1, size_t len1, uint16_t *src2,
-		     size_t len2)
+uint16_t union2by2_scalar(uint16_t *dst, uint16_t *src1, uint16_t len1, uint16_t *src2,
+		     uint16_t len2)
 {
 	uint16_t *original_dst = dst;
 
-	size_t pos1 = 0;
-	size_t pos2 = 0;
+	uint16_t pos1 = 0;
+	uint16_t pos2 = 0;
 
 	uint16_t s1, s2;
 	while (pos1 < len1 && pos2 < len2) {
@@ -507,16 +492,16 @@ int union2by2_scalar(uint16_t *dst, uint16_t *src1, size_t len1, uint16_t *src2,
 	return dst - original_dst;
 }
 
-int union2by2_vectorized(uint16_t *dst, uint16_t *src1, size_t len1,
-			 uint16_t *src2, size_t len2)
+uint16_t union2by2_vectorized(uint16_t *dst, uint16_t *src1, uint16_t len1,
+			 uint16_t *src2, uint16_t len2)
 {
 	if ((len1 < 8) || (len2 < 8)) {
 		return union2by2_scalar(dst, src1, len1, src2, len2);
 	}
 
 	uint16x8_t vA, vB, v_min, v_max, last_store;
-	size_t n_vecs1, n_vecs2;
-	size_t pos1, pos2;
+	uint16_t n_vecs1, n_vecs2;
+	uint16_t pos1, pos2;
 	uint16_t *original_dst = dst;
 
 	n_vecs1 = len1 / 8;
@@ -539,7 +524,7 @@ int union2by2_vectorized(uint16_t *dst, uint16_t *src1, size_t len1,
 
 	uint16x8_t V;
 	uint16_t curr_a, curr_b, *src;
-	size_t pos;
+	uint16_t pos;
 	int cmp;
 	while ((pos1 < n_vecs1) && (pos2 < n_vecs2)) {
 		curr_a = src1[pos1 * 8];
@@ -570,10 +555,10 @@ int union2by2_vectorized(uint16_t *dst, uint16_t *src1, size_t len1,
 	// then store the uniques onto the destination. then, we run a scalar
 	// union2by2 on the remaining set.
 	uint16_t buffer[16];
-	int buffer_size = store_unique(last_store, v_max, buffer);
+	uint16_t buffer_size = store_unique(last_store, v_max, buffer);
 
 	uint16_t *smaller, *bigger;
-	size_t smaller_size, bigger_size;
+	uint16_t smaller_size, bigger_size;
 
 	if (pos1 == n_vecs1) {
 		smaller = src1 + 8 * pos1;

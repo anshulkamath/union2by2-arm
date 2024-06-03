@@ -8,14 +8,24 @@ C_FLAGS += $(INCLUDES)
 C_FLAGS += $(LIBS)
 
 build_dir := bin
+obj_dir := obj
 
 all:
 
 bin:
 	@mkdir -p bin
 
-test: src/union2by2_test.c src/union2by2.c | bin
-	$(CC) $(C_FLAGS) -o $(build_dir)/test-u2b2 $<
+obj:
+	@mkdir -p obj
+
+test: src/union2by2_test.c $(obj_dir)/utils.o | bin
+	$(CC) $(C_FLAGS) -o $(build_dir)/test-u2b2 $^
+
+$(obj_dir)/utils.o: src/utils.c include/utils.h | obj
+	$(CC) -c $(C_FLAGS) -o $@ $<
+
+$(obj_dir)/union2by2.o: src/union2by2.c include/union2by2.h | obj
+	$(CC) -c $(C_FLAGS) -o $@ $<
 
 clean:
 	rm -rf $(build_dir)
